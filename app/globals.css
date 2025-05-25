@@ -66,3 +66,9 @@
     @apply bg-background text-foreground;
   }
 }
+
+.pattern{
+  background-image: url(/pattern.png);
+  background-position: top;
+  background-repeat: no-repeat;
+}
