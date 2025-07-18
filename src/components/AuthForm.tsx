@@ -49,28 +49,26 @@ const AuthForm = ({ type }: { type: FormType }) => {
     },
   });
 
-  async function onSubmit(values: FormSchema) {
-    setLoading(true);
+  async function handleSignUp({ name, email, password }: FormSchema){
     try {
-      if (!isSignIn) {
-        const { name, email, password } = values;
-        try {
-          const userCredentials = await createUserWithEmailAndPassword(
+          const userCredential = await createUserWithEmailAndPassword(
             auth,
             email,
             password
           );
           const result = await signUp({
-            uid: userCredentials.user.uid,
+            uid: userCredential.user.uid,
             name: name!,
-            email: email,
-            password: password
+            email,
+            // password,
           });
+
           if (!result?.success) {
             toast.error(result?.message);
             return;
           }
-          toast.success("Account created successfully!");
+
+          toast.success("Account created successfully! Please sign in.");
           router.push("/sign-in");
         } catch (error) {
           const firebaseError = error as AuthError;
@@ -82,24 +80,22 @@ const AuthForm = ({ type }: { type: FormType }) => {
           }
           throw error;
         }
-      } else {
-        try {
-          const { email, password } = values;
+  }
+
+  async function handleSignIn({ email, password }: FormSchema){
+    try {
           const userCredential = await signInWithEmailAndPassword(
             auth,
             email,
             password
           );
           const idToken = await userCredential.user.getIdToken();
+          
           if (!idToken) {
             toast.error("Sign in failed: No ID token received.");
             return;
           }
-          const result = await signIn({ email, idToken });
-          if (!result?.success) {
-            toast.error(result?.message);
-            return;
-          }
+          await signIn({ email, idToken });
           toast.success("Sign-in successful!");
           router.push("/");
         } catch (error) {
@@ -110,14 +106,19 @@ const AuthForm = ({ type }: { type: FormType }) => {
           }
           throw error;
         }
+  }
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setLoading(true);
+    try {
+      if (!isSignIn) {
+        await handleSignUp(values);
+      } else {
+        await handleSignIn(values);
       }
     } catch (error) {
       console.error("Error in onSubmit:", error);
-      toast.error(
-        `An error occurred: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
+      toast.error(`An unknown error occurred: ${error}`);
     } finally {
       setLoading(false);
     }

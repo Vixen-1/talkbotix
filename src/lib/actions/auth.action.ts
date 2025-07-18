@@ -1,31 +1,11 @@
 "use server";
 import { db, auth } from "@/firebase/admin";
-import { FirebaseError } from "firebase-admin";
-import { AuthError } from "firebase/auth";
 import { cookies } from "next/headers";
 
 const ONE_WEEK: number = 60 * 60 * 24 * 7;
 export async function signUp(params: SignUpParams) {
   const { uid, name, email, password } = params;
   try {
-    // try {
-    //   console.log(`Checking Auth for email: ${email}`);
-    //   const authUser = await auth.getUserByEmail(email);
-    //   console.log(`Auth user found: ${authUser.uid}`);
-    //   return {
-    //     success: false,
-    //     message: `This email is already in use. Please sign in instead.`,
-    //   };
-    // } catch (error) {
-    //   if ((error as FirebaseError).code !== "auth/user-not-found") {
-    //     console.error("Unexpected error checking auth user:", error);
-    //     throw error;
-    //   }
-    //   console.log(`No user found in Auth for email: ${email}`);
-    // }
-
-    // Check Firestore for existing user document
-    // console.log(`Checking Firestore for user: ${uid}`);
     const userRecord = await db.collection("users").doc(uid).get();
     if (userRecord.exists) {
       return {
@@ -33,14 +13,11 @@ export async function signUp(params: SignUpParams) {
         message: `User already exists. Please sign in instead`,
       };
     }
-    // Create Firestore document
-    console.log(`Creating Firestore document for user: ${uid}`);
     await db.collection("users").doc(uid).set({
       name,
       email,
       password
     });
-    console.log(`Firestore document created for user: ${uid}`);
 
     return {
       success: true,
@@ -48,12 +25,6 @@ export async function signUp(params: SignUpParams) {
     };
   } catch (e) {
     console.error("Error creating user: ", e);
-    const firebaseError = e as AuthError;
-    if (firebaseError.code === "auth/email-already-in-use")
-      return {
-        success: false,
-        message: `This email is already in use.`,
-      };
     return {
       success: false,
       message: `Failed to create an account`,
@@ -78,12 +49,6 @@ export async function signIn(params: SignInParams) {
     };
   } catch (e) {
     console.error("Error creating user: ", e);
-    const firebaseError = e as AuthError;
-    if (firebaseError.code === "auth/invalid-credential")
-      return {
-        success: false,
-        message: `Email or password is incorrect`,
-      };
     return {
       success: false,
       message: `Failed to log into an account: ${
