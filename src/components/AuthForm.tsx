@@ -10,6 +10,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import FormField from "./FormField";
 import { useRouter } from "next/navigation";
+import { resetPassword } from "@/lib/actions/auth.reset";
 import {
   AuthError,
   createUserWithEmailAndPassword,
@@ -40,6 +41,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
   const router = useRouter();
   const formSchema = authFormSchema(type);
   const [loading, setLoading] = useState<boolean>(false);
+  const [resetLoading, setResetLoading] = useState<boolean>(false);
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -124,6 +126,24 @@ const AuthForm = ({ type }: { type: FormType }) => {
     }
   }
 
+    async function handleResetPassword() {
+    setResetLoading(true);
+    try {
+      const email = form.getValues("email");
+      const result = await resetPassword(email);
+      if (!result.success) {
+        toast.error(result.message);
+        return;
+      }
+      toast.success(result.message);
+    } catch (error) {
+      console.error("Error in handleResetPassword:", error);
+      toast.error(`Failed to send password reset email: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setResetLoading(false);
+    }
+  }
+
   const FormFields: FormFieldConfig[] = isSignIn
     ? [
         {
@@ -192,6 +212,18 @@ const AuthForm = ({ type }: { type: FormType }) => {
                 ? "Creating Account......"
                 : "Create an Account"}
             </Button>
+             {isSignIn && (
+              <div className="text-center">
+              <Button
+                variant="link"
+                className="text-blue-700 underline"
+                onClick={handleResetPassword}
+                disabled={loading || resetLoading || !form.getValues("email")}
+              >
+                {resetLoading ? "Sending..." : "Reset Password"}
+              </Button>
+              </div>
+            )}
           </form>
         </Form>
         <p className="text-center">
