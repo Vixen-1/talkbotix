@@ -1,21 +1,29 @@
 "use server";
 import { db, auth } from "@/firebase/admin";
+import { FirebaseError } from "firebase/app";
 import { cookies } from "next/headers";
 
 const ONE_WEEK: number = 60 * 60 * 24 * 7;
 export async function signUp(params: SignUpParams) {
   const { uid, name, email } = params;
   try {
+    if (!uid || !name || !email) {
+      return {
+        success: false,
+        message: "Invalid input parameters",
+      };
+    }
     const userRecord = await db.collection("users").doc(uid).get();
     if (userRecord.exists) {
       return {
         success: false,
-        message: `User already exists. Please sign in instead`,
+        message: `User already exists. Please sign in instead.`,
       };
     }
     await db.collection("users").doc(uid).set({
       name,
       email,
+      createdAt: new Date().toISOString(),
     });
 
     return {
@@ -23,10 +31,18 @@ export async function signUp(params: SignUpParams) {
       message: "Account created successfully. Please sign in.",
     };
   } catch (e: unknown) {
-    console.error("Error creating user: ", e);
+    console.error(`Error in signUp for email ${email}, uid ${uid}:`, e);
+    if (e instanceof Error && "code" in e && typeof (e).code === "string") {
+      const firebaseError = e as FirebaseError;
+      console.error(`Firebase error code: ${firebaseError.code}, message: ${firebaseError.message}`);
+      return {
+        success: false,
+        message: `Failed to create an account: ${firebaseError.message} (code: ${firebaseError.code})`,
+      };
+    }
     return {
       success: false,
-      message: `Failed to create an account`,
+      message: `Failed to create an account: ${e instanceof Error ? e.message : String(e)}`,
     };
   }
 }
@@ -46,27 +62,56 @@ export async function signIn(params: SignInParams) {
       success: true,
       message: "Sign-in successful!",
     };
-  } catch (e) {
-    console.error("Error creating user: ", e);
+  } catch (e: unknown) {
+    console.error(`Error signing in for email ${email}:`, e);
     return {
       success: false,
-      message: `Failed to log into an account: ${
-        e instanceof Error ? e.message : String(e)
-      }`,
+      message: `Failed to log into an account: ${e}`,
     };
   }
 }
 
 export async function setSessionCookie(idToken: string) {
-  const cookieStore = await cookies();
-  const sessionCookie = await auth.createSessionCookie(idToken, {
-    expiresIn: ONE_WEEK * 1000,
-  });
-  cookieStore.set("session", sessionCookie, {
-    maxAge: ONE_WEEK,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    sameSite: "lax",
-  });
+  try {
+    const cookieStore = await cookies();
+    const sessionCookie = await auth.createSessionCookie(idToken, {
+      expiresIn: ONE_WEEK * 1000,
+    });
+    cookieStore.set("session", sessionCookie, {
+      maxAge: ONE_WEEK,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      sameSite: "lax",
+    });
+  } catch (e: unknown) {
+    console.error("Error creating session cookie:", e);
+    throw e;
+  }
+}
+
+export async function getCurrentUser(): Promise<User | null>{
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('session')?.value;
+
+    if(!sessionCookie) return null;
+
+    try{
+        const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+        const userRecord = await db.collection('users').doc(decodedClaims.uid).get();
+        if(!userRecord.exists) return null;
+        return{
+            ...userRecord.data(),
+            id: userRecord.id,
+        } as User;
+
+    }catch(e){
+        console.error(e);
+        return null;
+    }
+} 
+
+export async function isAuthenticated(){
+    const user = await getCurrentUser();
+    return !!user; // true or false
 }

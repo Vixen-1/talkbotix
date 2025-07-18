@@ -1,6 +1,5 @@
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "@/firebase/client";
-import { toast } from "sonner";
 import { AuthError } from "firebase/auth";
 
 export async function resetPassword(email: string): Promise<{ success: boolean; message: string }> {
