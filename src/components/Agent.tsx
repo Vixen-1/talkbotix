@@ -68,7 +68,6 @@ const Agent = ({ userName, type, userId }: AgentProps) => {
               )}
             />
             <span>
-              {" "}
               {callStatus === "INACTIVE" || callStatus === "FINISHED"
                 ? "Call"
                 : ". . ."}
