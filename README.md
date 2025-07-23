@@ -84,4 +84,4 @@ npm run dev
 
 ## 🧑‍💻 Author
 
-**Built with ❤️ by Ayushi Saxena**
+**Built with ❤️ by [Ayushi Saxena](https://www.linkedin.com/in/Ayushi2800)**
