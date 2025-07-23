@@ -51,62 +51,61 @@ const AuthForm = ({ type }: { type: FormType }) => {
     },
   });
 
-  async function handleSignUp({ name, email, password }: FormSchema){
+  async function handleSignUp({ name, email, password }: FormSchema) {
     try {
-          const userCredential = await createUserWithEmailAndPassword(
-            auth,
-            email,
-            password
-          );
-          const result = await signUp({
-            uid: userCredential.user.uid,
-            name: name!,
-            email,
-          });
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const result = await signUp({
+        uid: userCredential.user.uid,
+        name: name!,
+        email,
+      });
 
-          if (!result?.success) {
-            toast.error(result?.message);
-            return;
-          }
-
-          toast.success("Account created successfully! Please sign in.");
-          router.push("/sign-in");
-        } catch (error) {
-          const firebaseError = error as AuthError;
-          if (firebaseError.code === "auth/email-already-in-use") {
-            toast.error(
-              "This email is already in use. Please sign in or use a different email."
-            );
-            return;
-          }
-          throw error;
-        }
+      if (!result?.success) {
+        toast.error(result?.message);
+        return;
+      }
+      toast.success("Account created successfully! Please sign in.");
+      router.push("/sign-in");
+    } catch (error) {
+      const firebaseError = error as AuthError;
+      if (firebaseError.code === "auth/email-already-in-use") {
+        toast.error(
+          "This email is already in use. Please sign in or use a different email."
+        );
+        return;
+      }
+      throw error;
+    }
   }
 
-  async function handleSignIn({ email, password }: FormSchema){
+  async function handleSignIn({ email, password }: FormSchema) {
     try {
-          const userCredential = await signInWithEmailAndPassword(
-            auth,
-            email,
-            password
-          );
-          const idToken = await userCredential.user.getIdToken();
-          
-          if (!idToken) {
-            toast.error("Sign in failed: No ID token received.");
-            return;
-          }
-          await signIn({ email, idToken });
-          toast.success("Sign-in successful!");
-          router.push("/");
-        } catch (error) {
-          const firebaseError = error as AuthError;
-          if (firebaseError.code === "auth/invalid-credential") {
-            toast.error("Please enter valid email or password");
-            return;
-          }
-          throw error;
-        }
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const idToken = await userCredential.user.getIdToken();
+
+      if (!idToken) {
+        toast.error("Sign in failed: No ID token received.");
+        return;
+      }
+      await signIn({ email, idToken });
+      toast.success("Sign-in successful!");
+      router.push("/");
+    } catch (error) {
+      const firebaseError = error as AuthError;
+      if (firebaseError.code === "auth/invalid-credential") {
+        toast.error("Please enter valid email or password");
+        return;
+      }
+      throw error;
+    }
   }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -125,7 +124,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
     }
   }
 
-    async function handleResetPassword() {
+  async function handleResetPassword() {
     setResetLoading(true);
     try {
       const email = form.getValues("email");
@@ -137,7 +136,11 @@ const AuthForm = ({ type }: { type: FormType }) => {
       toast.success(result.message);
     } catch (error) {
       console.error("Error in handleResetPassword:", error);
-      toast.error(`Failed to send password reset email: ${error instanceof Error ? error.message : String(error)}`);
+      toast.error(
+        `Failed to send password reset email: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
     } finally {
       setResetLoading(false);
     }
@@ -211,16 +214,16 @@ const AuthForm = ({ type }: { type: FormType }) => {
                 ? "Creating Account......"
                 : "Create an Account"}
             </Button>
-             {isSignIn && (
+            {isSignIn && (
               <div className="text-center">
-              <Button
-                variant="link"
-                className="text-blue-700 underline"
-                onClick={handleResetPassword}
-                disabled={loading || resetLoading || !form.getValues("email")}
-              >
-                {resetLoading ? "Sending..." : "Reset Password"}
-              </Button>
+                <Button
+                  variant="link"
+                  className="text-blue-700 underline"
+                  onClick={handleResetPassword}
+                  disabled={loading || resetLoading || !form.getValues("email")}
+                >
+                  {resetLoading ? "Sending..." : "Reset Password"}
+                </Button>
               </div>
             )}
           </form>

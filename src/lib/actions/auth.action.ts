@@ -2,6 +2,8 @@
 import { db, auth } from "@/firebase/admin";
 import { FirebaseError } from "firebase/app";
 import { cookies } from "next/headers";
+import { signOut as firebaseSignOut } from "firebase/auth";
+import { auth as clientAuth } from "@/firebase/client";
 
 const ONE_WEEK: number = 60 * 60 * 24 * 7;
 export async function signUp(params: SignUpParams) {
@@ -94,13 +96,24 @@ export async function setSessionCookie(idToken: string) {
   }
 }
 
+// export async function deleteSessionCookie() {
+//   try {
+//     const cookieStore = cookies(); // No need for `await` here — cookies() is sync
+//     await cookieStore.remove("session"); // Remove the session cookie
+//   } catch (e: unknown) {
+//     console.error("Error deleting session cookie:", e);
+//     throw e;
+//   }
+// }
+
+
 export async function getCurrentUser(): Promise<User | null> {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get("session")?.value;
 
   if (!sessionCookie) return null;
 
-  try {
+  // try {
     const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
     const userRecord = await db
       .collection("users")
@@ -111,10 +124,10 @@ export async function getCurrentUser(): Promise<User | null> {
       ...userRecord.data(),
       id: userRecord.id,
     } as User;
-  } catch (e) {
-    console.error(e);
-    return null;
-  }
+  // } catch (e) {
+  //   console.error("Failed to get user details: ", e);
+  //   return null;
+  // }
 }
 
 export async function isAuthenticated() {

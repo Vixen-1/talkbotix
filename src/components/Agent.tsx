@@ -110,7 +110,8 @@ const Agent = ({
           variableValues: {
             username: userName || "Guest",
             questions: formattedQuestions
-          }
+          },
+          // startCall: true
         })
       }
     } catch (error) {
