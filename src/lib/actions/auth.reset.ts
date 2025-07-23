@@ -1,4 +1,4 @@
-import { sendPasswordResetEmail } from "firebase/auth";
+import { sendPasswordResetEmail, signOut } from "firebase/auth";
 import { auth } from "@/firebase/client";
 import { AuthError } from "firebase/auth";
 
@@ -34,6 +34,40 @@ export async function resetPassword(email: string): Promise<{ success: boolean; 
     return {
       success: false,
       message: `Failed to send password reset email: ${firebaseError.message || String(error)}`,
+    };
+  }
+}
+
+export async function logout(): Promise<{ success: boolean; message: string }> {
+  try {
+    // Sign out from Firebase Authentication
+    await signOut(auth);
+
+    // Clear session cookie via server-side API
+    const response = await fetch("/api/auth/logout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error("Failed to clear session cookie:", error);
+      return {
+        success: false,
+        message: `Failed to log out: ${error.message || "Server error"}`,
+      };
+    }
+
+    return {
+      success: true,
+      message: "Logged out successfully.",
+    };
+  } catch (error) {
+    console.error("Error during logout:", error);
+    const firebaseError = error as AuthError;
+    return {
+      success: false,
+      message: `Failed to log out: ${firebaseError.message || String(error)}`,
     };
   }
 }

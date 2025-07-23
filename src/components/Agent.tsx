@@ -16,7 +16,13 @@ interface SavedMessage {
   role: "user" | "system" | "assistant";
   content: string;
 }
-const Agent = ({ userName, type, userId }: AgentProps) => {
+const Agent = ({
+  userName,
+  type,
+  userId,
+  interviewId,
+  questions,
+}: AgentProps) => {
   const router = useRouter();
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
   const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
@@ -58,21 +64,52 @@ const Agent = ({ userName, type, userId }: AgentProps) => {
     };
   }, []);
 
-  useEffect(()=>{
-    if(callStatus === CallStatus.FINISHED) router.push('/');
-  },[messages, callStatus, type, userId])
-
-const handleCall = async () => {
-    try {
-      setCallStatus(CallStatus.CONNECTING);
-      await vapi.start(process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID!,
-      {
-      variableValues: {
-        username: userName || "Guest",
-        userid: userId || "default-user-id",
-        },
+  const handleGenerateFeedback = async (messages: SavedMessage[]) => {
+    console.log("Generate feedback here");
+    const { success, id } = {
+      success: true,
+      id: "feedback-id",
+    };
+    if (success && id) {
+      router.push(`/interview/${interviewId}`);
+    } else {
+      console.log("Error Saving Feedback");
+      router.push("/");
     }
-  )
+  };
+  useEffect(() => {
+    if (callStatus === CallStatus.FINISHED) {
+      if (type === "generate") {
+        router.push("/");
+      } else {
+        handleGenerateFeedback(messages);
+      }
+    }
+    // if(callStatus === CallStatus.FINISHED) router.push('/');
+  }, [messages, callStatus, type, userId]);
+
+  const handleCall = async () => {
+    try {
+      if (type === "generate") {
+        setCallStatus(CallStatus.CONNECTING);
+        await vapi.start(process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID!, {
+          variableValues: {
+            username: userName || "Guest",
+            userid: userId || "default-user-id",
+          },
+        });
+      } else {
+        let formattedQuestions = '';
+        if(questions){
+          formattedQuestions = questions.map((question)=>`- ${question}`).join('\n')
+        }
+        await vapi.start(process.env.NEXT_PUBLIC_VAPI_QUESTIONS_ASSISTANT_ID!, {
+          variableValues: {
+            username: userName || "Guest",
+            questions: formattedQuestions
+          }
+        })
+      }
     } catch (error) {
       console.error("Failed to start call:", error);
       setCallStatus(CallStatus.FINISHED);
@@ -89,7 +126,8 @@ const handleCall = async () => {
   };
 
   const latestMessage = messages[messages.length - 1]?.content;
-  const isCallInactiveOrFinished = callStatus=== CallStatus.INACTIVE || callStatus === CallStatus.FINISHED; 
+  const isCallInactiveOrFinished =
+    callStatus === CallStatus.INACTIVE || callStatus === CallStatus.FINISHED;
 
   return (
     <>
@@ -110,7 +148,7 @@ const handleCall = async () => {
         <div className="card-border">
           <div className="card-content">
             <Image
-              src="/user-avatar.png"
+              src="/Ayushi.png"
               alt="user-avatar"
               width={540}
               height={540}
@@ -142,16 +180,16 @@ const handleCall = async () => {
           <button className="relative btn-call" onClick={handleCall}>
             <span
               className={cn(
-                'absolute  animate-ping rounded-full opacity-75',
-                callStatus !== CallStatus.CONNECTING && 'hidden'
+                "absolute  animate-ping rounded-full opacity-75",
+                callStatus !== CallStatus.CONNECTING && "hidden"
               )}
             />
-            <span>
-              {isCallInactiveOrFinished ? "Call" : ". . ."}
-            </span>
+            <span>{isCallInactiveOrFinished ? "Call" : ". . ."}</span>
           </button>
         ) : (
-          <button className="btn-disconnect" onClick={handleDisconnect}>End</button>
+          <button className="btn-disconnect" onClick={handleDisconnect}>
+            End
+          </button>
         )}
       </div>
     </>
