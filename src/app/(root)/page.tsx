@@ -61,7 +61,7 @@ export default async function Home() {
           )}
         </div>
       </section>
-      {/* <section className="flex flex-col gap-6 mt-8">
+      <section className="flex flex-col gap-6 mt-8">
         <h2>Take an interview </h2>
         <div className="interviews-section">
           {hasLatestInterviews ? (
@@ -80,7 +80,7 @@ export default async function Home() {
             <p>There are no new interviews available</p>
           )}
         </div>
-      </section> */}
+      </section>
     </>
   );
 }
